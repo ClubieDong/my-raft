@@ -8,19 +8,16 @@ package raft
 // test with the original before submitting.
 //
 
-import (
-	"dissys/src/labrpc"
-	"log"
-	"runtime"
-	"sync"
-	"testing"
-
-	crand "crypto/rand"
-	"encoding/base64"
-	"fmt"
-	"sync/atomic"
-	"time"
-)
+import "dissys/src/labrpc"
+import "log"
+import "sync"
+import "testing"
+import "runtime"
+import crand "crypto/rand"
+import "encoding/base64"
+import "sync/atomic"
+import "time"
+import "fmt"
 
 func randstring(n int) string {
 	b := make([]byte, 2*n)
@@ -105,19 +102,13 @@ func (cfg *config) crash1(i int) {
 	}
 }
 
-func (cfg *config) PrintRaftStatus() {
-	log.Printf("=======================================")
-	for _, rf := range cfg.rafts {
-		rf.PrintStatus()
-	}
-	log.Printf("=======================================")
-}
-
+//
 // start or re-start a Raft.
 // if one already exists, "kill" it first.
 // allocate new outgoing port file names, and a new
 // state persister, to isolate previous instance of
 // this server. since we cannot really kill it.
+//
 func (cfg *config) start1(i int) {
 	cfg.crash1(i)
 
@@ -167,7 +158,6 @@ func (cfg *config) start1(i int) {
 				}
 				_, prevok := cfg.logs[i][m.Index-1]
 				cfg.logs[i][m.Index] = v
-				DPrintf("Committed log received, server=%d, index=%d", i, m.Index)
 				cfg.mu.Unlock()
 
 				if m.Index > 1 && prevok == false {
@@ -209,7 +199,7 @@ func (cfg *config) cleanup() {
 
 // attach server i to the net.
 func (cfg *config) connect(i int) {
-	fmt.Printf("connect(%d)\n", i)
+	// fmt.Printf("connect(%d)\n", i)
 
 	cfg.connected[i] = true
 
@@ -232,7 +222,7 @@ func (cfg *config) connect(i int) {
 
 // detach server i from the net.
 func (cfg *config) disconnect(i int) {
-	fmt.Printf("disconnect(%d)\n", i)
+	// fmt.Printf("disconnect(%d)\n", i)
 
 	cfg.connected[i] = false
 
@@ -290,7 +280,6 @@ func (cfg *config) checkOneLeader() int {
 		}
 
 		if len(leaders) != 0 {
-			DPrintf("checkOneLeader passed, leaderId=%d", leaders[lastTermWithLeader][0])
 			return leaders[lastTermWithLeader][0]
 		}
 	}
@@ -423,7 +412,6 @@ func (cfg *config) one(cmd int, expectedServers int) int {
 					// committed
 					if cmd2, ok := cmd1.(int); ok && cmd2 == cmd {
 						// and it was the command we submitted.
-						DPrintf("one Success, cmd=%d", cmd)
 						return index
 					}
 				}

@@ -30,6 +30,8 @@ import (
 )
 
 const (
+	SHOW_LOG_INFO = false
+
 	MIN_ELECTION_TIMEOUT_MS = 300
 	MAX_ELECTION_TIMEOUT_MS = 400
 	HEARTBEAT_INTERVAL_MS   = 100
@@ -64,7 +66,6 @@ func parallelRpc[TArgs any, TReply any](
 				var reply TReply
 				rf.logInfo("RPC %s issued to server#%d, args=%v", rpcName, server, args)
 				ok := rf.peers[server].Call("Raft."+rpcName, args, &reply)
-				// rf.logInfo("RPC %s done from server#%d, args=%v, ok=%t, reply=%v", rpcName, reply.server, args, reply.ok, reply.reply)
 				if ok {
 					rf.logInfo("RPC %s successed from server#%d, args=%v, reply=%v", rpcName, server, args, reply)
 				}
@@ -118,7 +119,7 @@ type Raft struct {
 	// Volatile state on all servers
 	commitIndex int
 	lastApplied int
-	role        string // follower, candidate, leader
+	role        string // follower, candidate, leader, killed
 
 	// Volatile state on leaders
 	nextIndex  []int
@@ -129,6 +130,9 @@ type Raft struct {
 }
 
 func (rf *Raft) logInfo(format string, args ...interface{}) {
+	if !SHOW_LOG_INFO {
+		return
+	}
 	pc, _, _, ok := runtime.Caller(1)
 	details := runtime.FuncForPC(pc)
 	funcNames := strings.Split(details.Name(), ".")
@@ -153,9 +157,9 @@ func (rf *Raft) setTerm(newTerm int) {
 		return
 	}
 	rf.currentTerm = newTerm
+	rf.logInfo("currentTerm set to %d", newTerm)
 	rf.votedFor = -1
 	rf.becomeFollower()
-	rf.logInfo("currentTerm set to %d", newTerm)
 }
 
 func (rf *Raft) setCommitIndex(newCommitIndex int) {
@@ -163,7 +167,7 @@ func (rf *Raft) setCommitIndex(newCommitIndex int) {
 		return
 	}
 	rf.commitIndex = newCommitIndex
-	rf.logInfo("setCommitIndex: newCommitIndex=%d", newCommitIndex)
+	rf.logInfo("commitIndex set to %d", newCommitIndex)
 
 	for rf.commitIndex > rf.lastApplied {
 		rf.lastApplied += 1
@@ -180,7 +184,7 @@ func (rf *Raft) setMatchIndex(server int, newMatchIndex int) {
 		return
 	}
 	rf.matchIndex[server] = newMatchIndex
-	rf.logInfo("setMatchIndex: server=%d, newMatchIndex=%d", server, newMatchIndex)
+	rf.logInfo("matchIndex of server#%d set to %d", server, newMatchIndex)
 
 	count := 0
 	for _, matchIndex := range rf.matchIndex {
@@ -207,7 +211,6 @@ func (rf *Raft) getLastLogIndexAndTerm() (lastLogIndex int, lastLogTerm int) {
 	return
 }
 
-// Return true if my log is more up-to-date than other's
 func (rf *Raft) isMyLogMoreUpToDate(otherLastLogIndex int, otherLastLogTerm int) bool {
 	// According to the last paragraph of $5.4.1
 	myLastLogIndex, myLastLogTerm := rf.getLastLogIndexAndTerm()
@@ -267,10 +270,12 @@ func (rf *Raft) RequestVote(args RequestVoteArgs, reply *RequestVoteReply) {
 	rf.setTerm(args.Term)
 	reply.Term = rf.currentTerm
 	if args.Term < rf.currentTerm {
+		rf.logInfo("Vote rejected to server#%d due to outdated term, args.Term=%d, currentTerm=%d", args.CandidateId, args.Term, rf.currentTerm)
 		reply.VoteGranted = false
 		return
 	}
 	if (rf.votedFor == -1 || rf.votedFor == args.CandidateId) && !rf.isMyLogMoreUpToDate(args.LastLogIndex, args.LastLogTerm) {
+		rf.logInfo("Vote granted to server#%d", args.CandidateId)
 		reply.VoteGranted = true
 		rf.votedFor = args.CandidateId
 		return
@@ -339,12 +344,14 @@ func (rf *Raft) AppendEntries(args AppendEntriesArgs, reply *AppendEntriesReply)
 	}
 	reply.Term = rf.currentTerm
 	if args.Term < rf.currentTerm {
+		rf.logInfo("AppendEntries rejected to server#%d due to outdated term, args.Term=%d, currentTerm=%d", args.LeaderId, args.Term, rf.currentTerm)
 		reply.Success = false
 		return
 	}
 	rf.resetElectionTicker()
 	rf.votedFor = -1
 	if args.PrevLogIndex >= len(rf.log) || rf.getTermByIndex(args.PrevLogIndex) != args.PrevLogTerm {
+		rf.logInfo("AppendEntries rejected to server#%d due to mismatched prevLogIndex, prevLogIndex=%d", args.LeaderId, args.PrevLogIndex)
 		reply.Success = false
 		return
 	}
@@ -352,6 +359,7 @@ func (rf *Raft) AppendEntries(args AppendEntriesArgs, reply *AppendEntriesReply)
 	if len(args.Entries) > 0 {
 		rf.log = rf.log[:args.PrevLogIndex+1]
 		rf.log = append(rf.log, args.Entries...)
+		rf.logInfo("AppendEntries applied, log=%v", rf.log)
 	}
 	if args.LeaderCommit > rf.commitIndex {
 		rf.setCommitIndex(minInt(args.LeaderCommit, args.PrevLogIndex+1))
@@ -373,21 +381,18 @@ func (rf *Raft) sendAppendEntriesToEachServer() {
 			LeaderCommit: rf.commitIndex,
 		}, false
 	}, func(server int, args AppendEntriesArgs, reply AppendEntriesReply) bool {
-		rf.logInfo("appendEntriesHandler server=%d, args=%v, reply=%v", server, args, reply)
 		rf.setTerm(reply.Term)
 		if rf.role != "leader" || args.Term != rf.currentTerm {
 			return false
 		}
 		if !reply.Success {
 			if rf.nextIndex[server] > 0 {
-				rf.logInfo("nextIndex of server#%d changed from %d to %d", server, rf.nextIndex[server], rf.nextIndex[server]-1)
 				rf.nextIndex[server] -= 1
 			}
+			rf.logInfo("AppendEntries rejected by server#%d, decrement nextIndex to %d", server, rf.nextIndex[server])
 			return true
 		}
-		if rf.nextIndex[server] != args.PrevLogIndex+len(args.Entries)+1 {
-			rf.logInfo("nextIndex of server#%d changed from %d to %d", server, rf.nextIndex[server], args.PrevLogIndex+len(args.Entries)+1)
-		}
+		rf.logInfo("AppendEntries applied by server#%d, set nextIndex to %d", server, args.PrevLogIndex+len(args.Entries)+1)
 		rf.nextIndex[server] = args.PrevLogIndex + len(args.Entries) + 1
 		rf.setMatchIndex(server, rf.nextIndex[server]-1)
 		return false
@@ -424,7 +429,6 @@ func (rf *Raft) becomeLeader() {
 	for server := 0; server < len(rf.peers); server += 1 {
 		rf.nextIndex[server] = len(rf.log)
 		rf.matchIndex[server] = -1
-		rf.logInfo("nextIndex of server#%d initialized to %d", server, rf.nextIndex[server])
 	}
 	rf.matchIndex[rf.me] = len(rf.log) - 1
 
@@ -450,7 +454,7 @@ func (rf *Raft) resetHeartbeatTicker() {
 	}
 }
 
-func (rf *Raft) electionTimerLoop() {
+func (rf *Raft) electionTickerLoop() {
 	for range rf.electionTicker.C {
 		rf.mu.Lock()
 		if rf.role == "killed" {
@@ -461,8 +465,8 @@ func (rf *Raft) electionTimerLoop() {
 			rf.mu.Unlock()
 			continue
 		}
+		rf.logInfo("Election timeout")
 
-		rf.logInfo("Election timeout, role=%s, votedFor=%d", rf.role, rf.votedFor)
 		if rf.role == "follower" && rf.votedFor == -1 {
 			rf.becomeCandidate()
 		} else if rf.role == "candidate" {
@@ -474,7 +478,7 @@ func (rf *Raft) electionTimerLoop() {
 	}
 }
 
-func (rf *Raft) heartbeatTimerLoop() {
+func (rf *Raft) heartbeatTickerLoop() {
 	for range rf.heartbeatTicker.C {
 		rf.mu.Lock()
 		if rf.role == "killed" {
@@ -485,6 +489,7 @@ func (rf *Raft) heartbeatTimerLoop() {
 			rf.mu.Unlock()
 			continue
 		}
+		rf.logInfo("Heartbeat timeout")
 
 		rf.sendAppendEntriesToEachServer()
 
@@ -518,7 +523,6 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 		Term:    rf.currentTerm,
 		Command: command,
 	})
-	rf.logInfo("nextIndex of server#%d changed from %d to %d", rf.me, rf.nextIndex[rf.me], rf.nextIndex[rf.me]+1)
 	rf.nextIndex[rf.me] += 1
 	rf.matchIndex[rf.me] += 1
 
@@ -573,8 +577,8 @@ func Make(peers []*labrpc.ClientEnd, me int, persister *Persister, applyCh chan 
 
 	rf.resetElectionTicker()
 	rf.resetHeartbeatTicker()
-	go rf.electionTimerLoop()
-	go rf.heartbeatTimerLoop()
+	go rf.electionTickerLoop()
+	go rf.heartbeatTickerLoop()
 
 	rf.logInfo("Raft created")
 	return rf

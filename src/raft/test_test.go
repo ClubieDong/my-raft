@@ -8,14 +8,12 @@ package raft
 // test with the original before submitting.
 //
 
-import (
-	"fmt"
-	"math/rand"
-	"sync"
-	"sync/atomic"
-	"testing"
-	"time"
-)
+import "testing"
+import "fmt"
+import "time"
+import "math/rand"
+import "sync/atomic"
+import "sync"
 
 // The tester generously allows solutions to complete elections in one second
 // (much more than the paper's range of timeouts).
@@ -52,31 +50,26 @@ func TestReElection(t *testing.T) {
 	leader1 := cfg.checkOneLeader()
 
 	// if the leader disconnects, a new one should be elected.
-	DPrintf("The leader disconnects")
 	cfg.disconnect(leader1)
 	cfg.checkOneLeader()
 
 	// if the old leader rejoins, that shouldn't
 	// disturb the old leader.
-	DPrintf("The old leader rejoins")
 	cfg.connect(leader1)
 	leader2 := cfg.checkOneLeader()
 
 	// if there's no quorum, no leader should
 	// be elected.
-	DPrintf("There's no quorum")
 	cfg.disconnect(leader2)
 	cfg.disconnect((leader2 + 1) % servers)
 	time.Sleep(2 * RaftElectionTimeout)
 	cfg.checkNoLeader()
 
 	// if a quorum arises, it should elect a leader.
-	DPrintf("A quorum arises")
 	cfg.connect((leader2 + 1) % servers)
 	cfg.checkOneLeader()
 
 	// re-join of last node shouldn't prevent leader from existing.
-	DPrintf("re-join of last node")
 	cfg.connect(leader2)
 	cfg.checkOneLeader()
 
@@ -314,11 +307,9 @@ func TestRejoin(t *testing.T) {
 	// new leader network failure
 	leader2 := cfg.checkOneLeader()
 	cfg.disconnect(leader2)
-	DPrintf("leader2(%d) disconnected", leader2)
 
 	// old leader connected again
 	cfg.connect(leader1)
-	DPrintf("leader1(%d) connected", leader1)
 
 	cfg.one(104, 2)
 
@@ -337,33 +328,20 @@ func TestBackup(t *testing.T) {
 
 	fmt.Printf("Test: leader backs up quickly over incorrect follower logs ...\n")
 
-	rand := 1234
-	getNext := func() int {
-		rand += 1
-		return rand
-	}
-
-	cfg.one(getNext(), servers)
-	DPrintf("DEBUG A")
-	cfg.PrintRaftStatus()
+	cfg.one(rand.Int(), servers)
 
 	// put leader and one follower in a partition
 	leader1 := cfg.checkOneLeader()
-	DPrintf("DEBUG B")
-	cfg.PrintRaftStatus()
 	cfg.disconnect((leader1 + 2) % servers)
 	cfg.disconnect((leader1 + 3) % servers)
 	cfg.disconnect((leader1 + 4) % servers)
 
 	// submit lots of commands that won't commit
-	for i := 0; i < 10; i++ {
-		cfg.rafts[leader1].Start(getNext())
+	for i := 0; i < 50; i++ {
+		cfg.rafts[leader1].Start(rand.Int())
 	}
-	cfg.PrintRaftStatus()
 
 	time.Sleep(RaftElectionTimeout / 2)
-
-	cfg.PrintRaftStatus()
 
 	cfg.disconnect((leader1 + 0) % servers)
 	cfg.disconnect((leader1 + 1) % servers)
@@ -373,37 +351,25 @@ func TestBackup(t *testing.T) {
 	cfg.connect((leader1 + 3) % servers)
 	cfg.connect((leader1 + 4) % servers)
 
-	cfg.PrintRaftStatus()
-
 	// lots of successful commands to new group.
-	for i := 0; i < 10; i++ {
-		cfg.one(getNext(), 3)
-		DPrintf("DEBUG C %d", i)
+	for i := 0; i < 50; i++ {
+		cfg.one(rand.Int(), 3)
 	}
-	cfg.PrintRaftStatus()
 
 	// now another partitioned leader and one follower
 	leader2 := cfg.checkOneLeader()
-	DPrintf("DEBUG D")
-	cfg.PrintRaftStatus()
 	other := (leader1 + 2) % servers
 	if leader2 == other {
 		other = (leader2 + 1) % servers
 	}
 	cfg.disconnect(other)
 
-	cfg.PrintRaftStatus()
-
 	// lots more commands that won't commit
-	for i := 0; i < 10; i++ {
-		cfg.rafts[leader2].Start(getNext())
+	for i := 0; i < 50; i++ {
+		cfg.rafts[leader2].Start(rand.Int())
 	}
 
-	cfg.PrintRaftStatus()
-
 	time.Sleep(RaftElectionTimeout / 2)
-
-	cfg.PrintRaftStatus()
 
 	// bring original leader back to life,
 	for i := 0; i < servers; i++ {
@@ -412,22 +378,17 @@ func TestBackup(t *testing.T) {
 	cfg.connect((leader1 + 0) % servers)
 	cfg.connect((leader1 + 1) % servers)
 	cfg.connect(other)
-	DPrintf("DEBUG E")
-	cfg.PrintRaftStatus()
 
 	// lots of successful commands to new group.
-	for i := 0; i < 10; i++ {
-		cfg.one(getNext(), 3)
-		DPrintf("DEBUG F %d", i)
+	for i := 0; i < 50; i++ {
+		cfg.one(rand.Int(), 3)
 	}
-	cfg.PrintRaftStatus()
 
 	// now everyone
 	for i := 0; i < servers; i++ {
 		cfg.connect(i)
 	}
-	cfg.one(getNext(), servers)
-	DPrintf("DEBUG G")
+	cfg.one(rand.Int(), servers)
 
 	fmt.Printf("  ... Passed\n")
 }
@@ -664,6 +625,7 @@ func TestPersist3(t *testing.T) {
 	fmt.Printf("  ... Passed\n")
 }
 
+//
 // Test the scenarios described in Figure 8 of the extended Raft paper. Each
 // iteration asks a leader, if there is one, to insert a command in the Raft
 // log.  If there is a leader, that leader will fail quickly with a high
@@ -672,6 +634,7 @@ func TestPersist3(t *testing.T) {
 // alive servers isn't enough to form a majority, perhaps start a new server.
 // The leader in a new term may try to finish replicating log entries that
 // haven't been committed yet.
+//
 func TestFigure8(t *testing.T) {
 	servers := 5
 	cfg := make_config(t, servers, false)
