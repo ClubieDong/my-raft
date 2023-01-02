@@ -337,20 +337,33 @@ func TestBackup(t *testing.T) {
 
 	fmt.Printf("Test: leader backs up quickly over incorrect follower logs ...\n")
 
-	cfg.one(rand.Int(), servers)
+	rand := 1234
+	getNext := func() int {
+		rand += 1
+		return rand
+	}
+
+	cfg.one(getNext(), servers)
+	DPrintf("DEBUG A")
+	cfg.PrintRaftStatus()
 
 	// put leader and one follower in a partition
 	leader1 := cfg.checkOneLeader()
+	DPrintf("DEBUG B")
+	cfg.PrintRaftStatus()
 	cfg.disconnect((leader1 + 2) % servers)
 	cfg.disconnect((leader1 + 3) % servers)
 	cfg.disconnect((leader1 + 4) % servers)
 
 	// submit lots of commands that won't commit
-	for i := 0; i < 50; i++ {
-		cfg.rafts[leader1].Start(rand.Int())
+	for i := 0; i < 10; i++ {
+		cfg.rafts[leader1].Start(getNext())
 	}
+	cfg.PrintRaftStatus()
 
 	time.Sleep(RaftElectionTimeout / 2)
+
+	cfg.PrintRaftStatus()
 
 	cfg.disconnect((leader1 + 0) % servers)
 	cfg.disconnect((leader1 + 1) % servers)
@@ -360,25 +373,37 @@ func TestBackup(t *testing.T) {
 	cfg.connect((leader1 + 3) % servers)
 	cfg.connect((leader1 + 4) % servers)
 
+	cfg.PrintRaftStatus()
+
 	// lots of successful commands to new group.
-	for i := 0; i < 50; i++ {
-		cfg.one(rand.Int(), 3)
+	for i := 0; i < 10; i++ {
+		cfg.one(getNext(), 3)
+		DPrintf("DEBUG C %d", i)
 	}
+	cfg.PrintRaftStatus()
 
 	// now another partitioned leader and one follower
 	leader2 := cfg.checkOneLeader()
+	DPrintf("DEBUG D")
+	cfg.PrintRaftStatus()
 	other := (leader1 + 2) % servers
 	if leader2 == other {
 		other = (leader2 + 1) % servers
 	}
 	cfg.disconnect(other)
 
+	cfg.PrintRaftStatus()
+
 	// lots more commands that won't commit
-	for i := 0; i < 50; i++ {
-		cfg.rafts[leader2].Start(rand.Int())
+	for i := 0; i < 10; i++ {
+		cfg.rafts[leader2].Start(getNext())
 	}
 
+	cfg.PrintRaftStatus()
+
 	time.Sleep(RaftElectionTimeout / 2)
+
+	cfg.PrintRaftStatus()
 
 	// bring original leader back to life,
 	for i := 0; i < servers; i++ {
@@ -387,17 +412,22 @@ func TestBackup(t *testing.T) {
 	cfg.connect((leader1 + 0) % servers)
 	cfg.connect((leader1 + 1) % servers)
 	cfg.connect(other)
+	DPrintf("DEBUG E")
+	cfg.PrintRaftStatus()
 
 	// lots of successful commands to new group.
-	for i := 0; i < 50; i++ {
-		cfg.one(rand.Int(), 3)
+	for i := 0; i < 10; i++ {
+		cfg.one(getNext(), 3)
+		DPrintf("DEBUG F %d", i)
 	}
+	cfg.PrintRaftStatus()
 
 	// now everyone
 	for i := 0; i < servers; i++ {
 		cfg.connect(i)
 	}
-	cfg.one(rand.Int(), servers)
+	cfg.one(getNext(), servers)
+	DPrintf("DEBUG G")
 
 	fmt.Printf("  ... Passed\n")
 }

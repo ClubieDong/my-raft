@@ -1,0 +1,321 @@
+disconnect(0)
+2023/01/03 03:41:35 [#0 becomeFollower] Become follower
+2023/01/03 03:41:35 [#0 Make] Raft created
+disconnect(1)
+2023/01/03 03:41:35 [#1 becomeFollower] Become follower
+2023/01/03 03:41:35 [#1 Make] Raft created
+disconnect(2)
+2023/01/03 03:41:35 [#2 becomeFollower] Become follower
+2023/01/03 03:41:35 [#2 Make] Raft created
+disconnect(3)
+2023/01/03 03:41:35 [#3 becomeFollower] Become follower
+2023/01/03 03:41:35 [#3 Make] Raft created
+disconnect(4)
+2023/01/03 03:41:35 [#4 becomeFollower] Become follower
+2023/01/03 03:41:35 [#4 Make] Raft created
+connect(0)
+connect(1)
+connect(2)
+connect(3)
+connect(4)
+Test: leader backs up quickly over incorrect follower logs ...
+2023/01/03 03:41:35 [#0 electionTimerLoop] Election timeout, role=follower, votedFor=-1
+2023/01/03 03:41:35 [#0 becomeCandidate] Become candidate
+2023/01/03 03:41:35 [#0 startElection] Start election, term=1
+2023/01/03 03:41:35 [#4 setTerm] currentTerm set to 1
+2023/01/03 03:41:35 [#3 setTerm] currentTerm set to 1
+2023/01/03 03:41:35 [#2 setTerm] currentTerm set to 1
+2023/01/03 03:41:35 [#0 func1] RPC RequestVote successed from server#4, args={Term:1 CandidateId:0 LastLogIndex:-1 LastLogTerm:0}, reply={Term:1 VoteGranted:true}
+2023/01/03 03:41:35 [#0 func2] Vote received from server#4, voteGranted=2
+2023/01/03 03:41:35 [#1 setTerm] currentTerm set to 1
+2023/01/03 03:41:35 [#0 func1] RPC RequestVote successed from server#3, args={Term:1 CandidateId:0 LastLogIndex:-1 LastLogTerm:0}, reply={Term:1 VoteGranted:true}
+2023/01/03 03:41:35 [#0 func1] RPC RequestVote successed from server#2, args={Term:1 CandidateId:0 LastLogIndex:-1 LastLogTerm:0}, reply={Term:1 VoteGranted:true}
+2023/01/03 03:41:35 [#0 func2] Vote received from server#3, voteGranted=3
+2023/01/03 03:41:35 [#0 becomeLeader] Become leader
+2023/01/03 03:41:35 [#0 func1] RPC RequestVote successed from server#1, args={Term:1 CandidateId:0 LastLogIndex:-1 LastLogTerm:0}, reply={Term:1 VoteGranted:true}
+2023/01/03 03:41:35 [#0 func1] RPC AppendEntries successed from server#1, args={Term:1 LeaderId:0 PrevLogIndex:-1 PrevLogTerm:0 Entries:[] LeaderCommit:-1}, reply={Term:1 Success:true}
+2023/01/03 03:41:35 [#0 func2] appendEntriesHandler server=1, reply={Term:1 Success:true}
+2023/01/03 03:41:35 [#0 func1] RPC AppendEntries successed from server#2, args={Term:1 LeaderId:0 PrevLogIndex:-1 PrevLogTerm:0 Entries:[] LeaderCommit:-1}, reply={Term:1 Success:true}
+2023/01/03 03:41:35 [#0 func1] RPC AppendEntries successed from server#4, args={Term:1 LeaderId:0 PrevLogIndex:-1 PrevLogTerm:0 Entries:[] LeaderCommit:-1}, reply={Term:1 Success:true}
+2023/01/03 03:41:35 [#0 func2] appendEntriesHandler server=2, reply={Term:1 Success:true}
+2023/01/03 03:41:35 [#0 func2] appendEntriesHandler server=4, reply={Term:1 Success:true}
+2023/01/03 03:41:35 [#0 func1] RPC AppendEntries successed from server#3, args={Term:1 LeaderId:0 PrevLogIndex:-1 PrevLogTerm:0 Entries:[] LeaderCommit:-1}, reply={Term:1 Success:true}
+2023/01/03 03:41:35 [#0 func2] appendEntriesHandler server=3, reply={Term:1 Success:true}
+2023/01/03 03:41:35 [#0 Start] Received command: 1235
+2023/01/03 03:41:35 [#0 func1] RPC AppendEntries successed from server#1, args={Term:1 LeaderId:0 PrevLogIndex:-1 PrevLogTerm:0 Entries:[{Command:1235 Term:1}] LeaderCommit:-1}, reply={Term:1 Success:true}
+2023/01/03 03:41:35 [#0 func1] RPC AppendEntries successed from server#3, args={Term:1 LeaderId:0 PrevLogIndex:-1 PrevLogTerm:0 Entries:[{Command:1235 Term:1}] LeaderCommit:-1}, reply={Term:1 Success:true}
+2023/01/03 03:41:35 [#0 func1] RPC AppendEntries successed from server#2, args={Term:1 LeaderId:0 PrevLogIndex:-1 PrevLogTerm:0 Entries:[{Command:1235 Term:1}] LeaderCommit:-1}, reply={Term:1 Success:true}
+2023/01/03 03:41:35 [#0 func2] appendEntriesHandler server=1, reply={Term:1 Success:true}
+2023/01/03 03:41:35 [#0 setMatchIndex] setMatchIndex: server=1, newMatchIndex=0
+2023/01/03 03:41:35 [#0 func2] appendEntriesHandler server=3, reply={Term:1 Success:true}
+2023/01/03 03:41:35 [#0 setMatchIndex] setMatchIndex: server=3, newMatchIndex=0
+2023/01/03 03:41:35 [#0 setCommitIndex] setCommitIndex: newCommitIndex=0
+2023/01/03 03:41:35 [#0 setCommitIndex] log #0 committed: 1235
+2023/01/03 03:41:35 [#0 func2] appendEntriesHandler server=2, reply={Term:1 Success:true}
+2023/01/03 03:41:35 [#0 setMatchIndex] setMatchIndex: server=2, newMatchIndex=0
+2023/01/03 03:41:35 [#0 func1] RPC AppendEntries successed from server#4, args={Term:1 LeaderId:0 PrevLogIndex:-1 PrevLogTerm:0 Entries:[{Command:1235 Term:1}] LeaderCommit:-1}, reply={Term:1 Success:true}
+2023/01/03 03:41:35 [#0 func2] appendEntriesHandler server=4, reply={Term:1 Success:true}
+2023/01/03 03:41:35 Committed log received, server=0, index=1
+2023/01/03 03:41:35 [#0 setMatchIndex] setMatchIndex: server=4, newMatchIndex=0
+2023/01/03 03:41:35 [#4 setCommitIndex] setCommitIndex: newCommitIndex=0
+2023/01/03 03:41:35 [#4 setCommitIndex] log #0 committed: 1235
+2023/01/03 03:41:35 [#3 setCommitIndex] setCommitIndex: newCommitIndex=0
+2023/01/03 03:41:35 Committed log received, server=4, index=1
+2023/01/03 03:41:35 [#3 setCommitIndex] log #0 committed: 1235
+2023/01/03 03:41:35 Committed log received, server=3, index=1
+2023/01/03 03:41:35 [#0 func1] RPC AppendEntries successed from server#4, args={Term:1 LeaderId:0 PrevLogIndex:0 PrevLogTerm:1 Entries:[] LeaderCommit:0}, reply={Term:1 Success:true}
+2023/01/03 03:41:35 [#0 func2] appendEntriesHandler server=4, reply={Term:1 Success:true}
+2023/01/03 03:41:35 [#0 func1] RPC AppendEntries successed from server#3, args={Term:1 LeaderId:0 PrevLogIndex:0 PrevLogTerm:1 Entries:[] LeaderCommit:0}, reply={Term:1 Success:true}
+2023/01/03 03:41:35 [#0 func2] appendEntriesHandler server=3, reply={Term:1 Success:true}
+2023/01/03 03:41:35 [#1 setCommitIndex] setCommitIndex: newCommitIndex=0
+2023/01/03 03:41:35 [#1 setCommitIndex] log #0 committed: 1235
+2023/01/03 03:41:35 [#0 func1] RPC AppendEntries successed from server#1, args={Term:1 LeaderId:0 PrevLogIndex:0 PrevLogTerm:1 Entries:[] LeaderCommit:0}, reply={Term:1 Success:true}
+2023/01/03 03:41:35 [#0 func2] appendEntriesHandler server=1, reply={Term:1 Success:true}
+2023/01/03 03:41:35 [#2 setCommitIndex] setCommitIndex: newCommitIndex=0
+2023/01/03 03:41:35 [#2 setCommitIndex] log #0 committed: 1235
+2023/01/03 03:41:35 [#0 func1] RPC AppendEntries successed from server#2, args={Term:1 LeaderId:0 PrevLogIndex:0 PrevLogTerm:1 Entries:[] LeaderCommit:0}, reply={Term:1 Success:true}
+2023/01/03 03:41:35 [#0 func2] appendEntriesHandler server=2, reply={Term:1 Success:true}
+2023/01/03 03:41:35 Committed log received, server=1, index=1
+2023/01/03 03:41:35 Committed log received, server=2, index=1
+2023/01/03 03:41:35 one Success, cmd=1235
+2023/01/03 03:41:35 DEBUG A
+2023/01/03 03:41:35 =======================================
+2023/01/03 03:41:35 [Status#0] role=leader, currentTerm=1, votedFor=0, commitIndex=0, lastApplied=0
+2023/01/03 03:41:35 [Status#0]     log=[{1235 1}]
+2023/01/03 03:41:35 [Status#0]     nextIndex=[1 1 1 1 1], matchIndex=[0 0 0 0 0]
+2023/01/03 03:41:35 [Status#1] role=follower, currentTerm=1, votedFor=-1, commitIndex=0, lastApplied=0
+2023/01/03 03:41:35 [Status#1]     log=[{1235 1}]
+2023/01/03 03:41:35 [Status#2] role=follower, currentTerm=1, votedFor=-1, commitIndex=0, lastApplied=0
+2023/01/03 03:41:35 [Status#2]     log=[{1235 1}]
+2023/01/03 03:41:35 [Status#3] role=follower, currentTerm=1, votedFor=-1, commitIndex=0, lastApplied=0
+2023/01/03 03:41:35 [Status#3]     log=[{1235 1}]
+2023/01/03 03:41:35 [Status#4] role=follower, currentTerm=1, votedFor=-1, commitIndex=0, lastApplied=0
+2023/01/03 03:41:35 [Status#4]     log=[{1235 1}]
+2023/01/03 03:41:35 =======================================
+2023/01/03 03:41:36 [#0 func1] RPC AppendEntries successed from server#4, args={Term:1 LeaderId:0 PrevLogIndex:0 PrevLogTerm:1 Entries:[] LeaderCommit:0}, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func2] appendEntriesHandler server=4, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func1] RPC AppendEntries successed from server#2, args={Term:1 LeaderId:0 PrevLogIndex:0 PrevLogTerm:1 Entries:[] LeaderCommit:0}, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func2] appendEntriesHandler server=2, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func1] RPC AppendEntries successed from server#3, args={Term:1 LeaderId:0 PrevLogIndex:0 PrevLogTerm:1 Entries:[] LeaderCommit:0}, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func2] appendEntriesHandler server=3, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func1] RPC AppendEntries successed from server#1, args={Term:1 LeaderId:0 PrevLogIndex:0 PrevLogTerm:1 Entries:[] LeaderCommit:0}, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func2] appendEntriesHandler server=1, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func1] RPC AppendEntries successed from server#4, args={Term:1 LeaderId:0 PrevLogIndex:0 PrevLogTerm:1 Entries:[] LeaderCommit:0}, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func2] appendEntriesHandler server=4, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func1] RPC AppendEntries successed from server#3, args={Term:1 LeaderId:0 PrevLogIndex:0 PrevLogTerm:1 Entries:[] LeaderCommit:0}, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func2] appendEntriesHandler server=3, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func1] RPC AppendEntries successed from server#1, args={Term:1 LeaderId:0 PrevLogIndex:0 PrevLogTerm:1 Entries:[] LeaderCommit:0}, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func2] appendEntriesHandler server=1, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func1] RPC AppendEntries successed from server#2, args={Term:1 LeaderId:0 PrevLogIndex:0 PrevLogTerm:1 Entries:[] LeaderCommit:0}, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func2] appendEntriesHandler server=2, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func1] RPC AppendEntries successed from server#4, args={Term:1 LeaderId:0 PrevLogIndex:0 PrevLogTerm:1 Entries:[] LeaderCommit:0}, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func2] appendEntriesHandler server=4, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func1] RPC AppendEntries successed from server#2, args={Term:1 LeaderId:0 PrevLogIndex:0 PrevLogTerm:1 Entries:[] LeaderCommit:0}, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func2] appendEntriesHandler server=2, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func1] RPC AppendEntries successed from server#3, args={Term:1 LeaderId:0 PrevLogIndex:0 PrevLogTerm:1 Entries:[] LeaderCommit:0}, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func2] appendEntriesHandler server=3, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func1] RPC AppendEntries successed from server#1, args={Term:1 LeaderId:0 PrevLogIndex:0 PrevLogTerm:1 Entries:[] LeaderCommit:0}, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func2] appendEntriesHandler server=1, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func1] RPC AppendEntries successed from server#4, args={Term:1 LeaderId:0 PrevLogIndex:0 PrevLogTerm:1 Entries:[] LeaderCommit:0}, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func2] appendEntriesHandler server=4, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func1] RPC AppendEntries successed from server#3, args={Term:1 LeaderId:0 PrevLogIndex:0 PrevLogTerm:1 Entries:[] LeaderCommit:0}, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func2] appendEntriesHandler server=3, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func1] RPC AppendEntries successed from server#2, args={Term:1 LeaderId:0 PrevLogIndex:0 PrevLogTerm:1 Entries:[] LeaderCommit:0}, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func2] appendEntriesHandler server=2, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func1] RPC AppendEntries successed from server#1, args={Term:1 LeaderId:0 PrevLogIndex:0 PrevLogTerm:1 Entries:[] LeaderCommit:0}, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func2] appendEntriesHandler server=1, reply={Term:1 Success:true}
+2023/01/03 03:41:36 checkOneLeader passed, leaderId=0
+2023/01/03 03:41:36 DEBUG B
+2023/01/03 03:41:36 =======================================
+2023/01/03 03:41:36 [Status#0] role=leader, currentTerm=1, votedFor=0, commitIndex=0, lastApplied=0
+2023/01/03 03:41:36 [Status#0]     log=[{1235 1}]
+2023/01/03 03:41:36 [Status#0]     nextIndex=[1 1 1 1 1], matchIndex=[0 0 0 0 0]
+2023/01/03 03:41:36 [Status#1] role=follower, currentTerm=1, votedFor=-1, commitIndex=0, lastApplied=0
+2023/01/03 03:41:36 [Status#1]     log=[{1235 1}]
+2023/01/03 03:41:36 [Status#2] role=follower, currentTerm=1, votedFor=-1, commitIndex=0, lastApplied=0
+2023/01/03 03:41:36 [Status#2]     log=[{1235 1}]
+2023/01/03 03:41:36 [Status#3] role=follower, currentTerm=1, votedFor=-1, commitIndex=0, lastApplied=0
+2023/01/03 03:41:36 [Status#3]     log=[{1235 1}]
+2023/01/03 03:41:36 [Status#4] role=follower, currentTerm=1, votedFor=-1, commitIndex=0, lastApplied=0
+2023/01/03 03:41:36 [Status#4]     log=[{1235 1}]
+2023/01/03 03:41:36 =======================================
+disconnect(2)
+disconnect(3)
+2023/01/03 03:41:36 [#0 func1] RPC AppendEntries successed from server#1, args={Term:1 LeaderId:0 PrevLogIndex:0 PrevLogTerm:1 Entries:[] LeaderCommit:0}, reply={Term:1 Success:true}
+disconnect(4)
+2023/01/03 03:41:36 [#0 func2] appendEntriesHandler server=2, reply={Term:0 Success:false}
+2023/01/03 03:41:36 [#0 func1] RPC AppendEntries successed from server#4, args={Term:1 LeaderId:0 PrevLogIndex:0 PrevLogTerm:1 Entries:[] LeaderCommit:0}, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func2] appendEntriesHandler server=1, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 Start] Received command: 1236
+2023/01/03 03:41:36 [#0 Start] Received command: 1237
+2023/01/03 03:41:36 [#0 Start] Received command: 1238
+2023/01/03 03:41:36 [#0 Start] Received command: 1239
+2023/01/03 03:41:36 [#0 func1] RPC AppendEntries successed from server#3, args={Term:1 LeaderId:0 PrevLogIndex:0 PrevLogTerm:1 Entries:[] LeaderCommit:0}, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 Start] Received command: 1240
+2023/01/03 03:41:36 [#0 Start] Received command: 1241
+2023/01/03 03:41:36 [#0 Start] Received command: 1242
+2023/01/03 03:41:36 [#0 Start] Received command: 1243
+2023/01/03 03:41:36 [#0 Start] Received command: 1244
+2023/01/03 03:41:36 [#0 Start] Received command: 1245
+2023/01/03 03:41:36 =======================================
+2023/01/03 03:41:36 [Status#0] role=leader, currentTerm=1, votedFor=0, commitIndex=0, lastApplied=0
+2023/01/03 03:41:36 [Status#0]     log=[{1235 1} {1236 1} {1237 1} {1238 1} {1239 1} {1240 1} {1241 1} {1242 1} {1243 1} {1244 1} {1245 1}]
+2023/01/03 03:41:36 [Status#0]     nextIndex=[11 1 1 1 1], matchIndex=[10 0 0 0 0]
+2023/01/03 03:41:36 [Status#1] role=follower, currentTerm=1, votedFor=-1, commitIndex=0, lastApplied=0
+2023/01/03 03:41:36 [Status#1]     log=[{1235 1}]
+2023/01/03 03:41:36 [Status#2] role=follower, currentTerm=1, votedFor=-1, commitIndex=0, lastApplied=0
+2023/01/03 03:41:36 [Status#2]     log=[{1235 1}]
+2023/01/03 03:41:36 [Status#3] role=follower, currentTerm=1, votedFor=-1, commitIndex=0, lastApplied=0
+2023/01/03 03:41:36 [Status#3]     log=[{1235 1}]
+2023/01/03 03:41:36 [Status#4] role=follower, currentTerm=1, votedFor=-1, commitIndex=0, lastApplied=0
+2023/01/03 03:41:36 [Status#4]     log=[{1235 1}]
+2023/01/03 03:41:36 =======================================
+2023/01/03 03:41:36 [#0 func2] appendEntriesHandler server=3, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 setMatchIndex] setMatchIndex: server=3, newMatchIndex=10
+2023/01/03 03:41:36 [#0 func2] appendEntriesHandler server=4, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 setMatchIndex] setMatchIndex: server=4, newMatchIndex=10
+2023/01/03 03:41:36 [#0 setCommitIndex] setCommitIndex: newCommitIndex=10
+2023/01/03 03:41:36 [#0 setCommitIndex] log #1 committed: 1236
+2023/01/03 03:41:36 Committed log received, server=0, index=2
+2023/01/03 03:41:36 Committed log received, server=0, index=3
+2023/01/03 03:41:36 [#0 setCommitIndex] log #2 committed: 1237
+2023/01/03 03:41:36 [#0 setCommitIndex] log #3 committed: 1238
+2023/01/03 03:41:36 Committed log received, server=0, index=4
+2023/01/03 03:41:36 Committed log received, server=0, index=5
+2023/01/03 03:41:36 [#0 setCommitIndex] log #4 committed: 1239
+2023/01/03 03:41:36 [#0 setCommitIndex] log #5 committed: 1240
+2023/01/03 03:41:36 Committed log received, server=0, index=6
+2023/01/03 03:41:36 Committed log received, server=0, index=7
+2023/01/03 03:41:36 [#0 func1] RPC AppendEntries successed from server#1, args={Term:1 LeaderId:0 PrevLogIndex:0 PrevLogTerm:1 Entries:[{Command:1236 Term:1} {Command:1237 Term:1} {Command:1238 Term:1} {Command:1239 Term:1} {Command:1240 Term:1} {Command:1241 Term:1} {Command:1242 Term:1} {Command:1243 Term:1} {Command:1244 Term:1} {Command:1245 Term:1}] LeaderCommit:0}, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 setCommitIndex] log #6 committed: 1241
+2023/01/03 03:41:36 [#0 setCommitIndex] log #7 committed: 1242
+2023/01/03 03:41:36 Committed log received, server=0, index=8
+2023/01/03 03:41:36 Committed log received, server=0, index=9
+2023/01/03 03:41:36 [#0 setCommitIndex] log #8 committed: 1243
+2023/01/03 03:41:36 [#0 setCommitIndex] log #9 committed: 1244
+2023/01/03 03:41:36 Committed log received, server=0, index=10
+2023/01/03 03:41:36 Committed log received, server=0, index=11
+2023/01/03 03:41:36 [#0 setCommitIndex] log #10 committed: 1245
+2023/01/03 03:41:36 [#1 setCommitIndex] setCommitIndex: newCommitIndex=1
+2023/01/03 03:41:36 [#1 setCommitIndex] log #1 committed: 1236
+2023/01/03 03:41:36 [#0 func1] RPC AppendEntries successed from server#1, args={Term:1 LeaderId:0 PrevLogIndex:0 PrevLogTerm:1 Entries:[{Command:1236 Term:1} {Command:1237 Term:1} {Command:1238 Term:1} {Command:1239 Term:1} {Command:1240 Term:1} {Command:1241 Term:1} {Command:1242 Term:1} {Command:1243 Term:1} {Command:1244 Term:1} {Command:1245 Term:1}] LeaderCommit:10}, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func2] appendEntriesHandler server=1, reply={Term:1 Success:true}
+2023/01/03 03:41:36 Committed log received, server=1, index=2
+2023/01/03 03:41:36 [#0 setMatchIndex] setMatchIndex: server=1, newMatchIndex=10
+2023/01/03 03:41:36 [#0 func1] RPC AppendEntries successed from server#1, args={Term:1 LeaderId:0 PrevLogIndex:0 PrevLogTerm:1 Entries:[{Command:1236 Term:1} {Command:1237 Term:1} {Command:1238 Term:1} {Command:1239 Term:1} {Command:1240 Term:1} {Command:1241 Term:1} {Command:1242 Term:1} {Command:1243 Term:1} {Command:1244 Term:1} {Command:1245 Term:1}] LeaderCommit:10}, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func2] appendEntriesHandler server=1, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func1] RPC AppendEntries successed from server#1, args={Term:1 LeaderId:0 PrevLogIndex:0 PrevLogTerm:1 Entries:[{Command:1236 Term:1} {Command:1237 Term:1} {Command:1238 Term:1} {Command:1239 Term:1} {Command:1240 Term:1} {Command:1241 Term:1} {Command:1242 Term:1} {Command:1243 Term:1} {Command:1244 Term:1} {Command:1245 Term:1}] LeaderCommit:10}, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func2] appendEntriesHandler server=1, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func1] RPC AppendEntries successed from server#1, args={Term:1 LeaderId:0 PrevLogIndex:0 PrevLogTerm:1 Entries:[{Command:1236 Term:1} {Command:1237 Term:1} {Command:1238 Term:1} {Command:1239 Term:1} {Command:1240 Term:1} {Command:1241 Term:1} {Command:1242 Term:1} {Command:1243 Term:1} {Command:1244 Term:1} {Command:1245 Term:1}] LeaderCommit:10}, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func2] appendEntriesHandler server=1, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func1] RPC AppendEntries successed from server#1, args={Term:1 LeaderId:0 PrevLogIndex:0 PrevLogTerm:1 Entries:[{Command:1236 Term:1} {Command:1237 Term:1} {Command:1238 Term:1} {Command:1239 Term:1} {Command:1240 Term:1} {Command:1241 Term:1} {Command:1242 Term:1} {Command:1243 Term:1} {Command:1244 Term:1} {Command:1245 Term:1}] LeaderCommit:10}, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func2] appendEntriesHandler server=1, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#1 setCommitIndex] setCommitIndex: newCommitIndex=10
+2023/01/03 03:41:36 [#1 setCommitIndex] log #2 committed: 1237
+2023/01/03 03:41:36 Committed log received, server=1, index=3
+2023/01/03 03:41:36 Committed log received, server=1, index=4
+2023/01/03 03:41:36 [#1 setCommitIndex] log #3 committed: 1238
+2023/01/03 03:41:36 [#1 setCommitIndex] log #4 committed: 1239
+2023/01/03 03:41:36 Committed log received, server=1, index=5
+2023/01/03 03:41:36 Committed log received, server=1, index=6
+2023/01/03 03:41:36 [#1 setCommitIndex] log #5 committed: 1240
+2023/01/03 03:41:36 [#1 setCommitIndex] log #6 committed: 1241
+2023/01/03 03:41:36 Committed log received, server=1, index=7
+2023/01/03 03:41:36 Committed log received, server=1, index=8
+2023/01/03 03:41:36 [#1 setCommitIndex] log #7 committed: 1242
+2023/01/03 03:41:36 [#1 setCommitIndex] log #8 committed: 1243
+2023/01/03 03:41:36 Committed log received, server=1, index=9
+2023/01/03 03:41:36 Committed log received, server=1, index=10
+2023/01/03 03:41:36 [#1 setCommitIndex] log #9 committed: 1244
+2023/01/03 03:41:36 [#1 setCommitIndex] log #10 committed: 1245
+2023/01/03 03:41:36 [#0 func1] RPC AppendEntries successed from server#1, args={Term:1 LeaderId:0 PrevLogIndex:10 PrevLogTerm:1 Entries:[] LeaderCommit:10}, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func2] appendEntriesHandler server=1, reply={Term:1 Success:true}
+2023/01/03 03:41:36 Committed log received, server=1, index=11
+2023/01/03 03:41:36 [#0 func1] RPC AppendEntries successed from server#1, args={Term:1 LeaderId:0 PrevLogIndex:10 PrevLogTerm:1 Entries:[] LeaderCommit:10}, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func2] appendEntriesHandler server=1, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func1] RPC AppendEntries successed from server#1, args={Term:1 LeaderId:0 PrevLogIndex:10 PrevLogTerm:1 Entries:[] LeaderCommit:10}, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func2] appendEntriesHandler server=1, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func1] RPC AppendEntries successed from server#1, args={Term:1 LeaderId:0 PrevLogIndex:10 PrevLogTerm:1 Entries:[] LeaderCommit:10}, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func2] appendEntriesHandler server=1, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func2] appendEntriesHandler server=1, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func2] appendEntriesHandler server=2, reply={Term:0 Success:false}
+2023/01/03 03:41:36 [#0 func1] RPC AppendEntries successed from server#1, args={Term:1 LeaderId:0 PrevLogIndex:10 PrevLogTerm:1 Entries:[] LeaderCommit:10}, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func2] appendEntriesHandler server=1, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func1] RPC AppendEntries successed from server#1, args={Term:1 LeaderId:0 PrevLogIndex:10 PrevLogTerm:1 Entries:[] LeaderCommit:10}, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func2] appendEntriesHandler server=1, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func1] RPC AppendEntries successed from server#1, args={Term:1 LeaderId:0 PrevLogIndex:10 PrevLogTerm:1 Entries:[] LeaderCommit:10}, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func2] appendEntriesHandler server=1, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#2 electionTimerLoop] Election timeout, role=follower, votedFor=-1
+2023/01/03 03:41:36 [#2 becomeCandidate] Become candidate
+2023/01/03 03:41:36 [#2 startElection] Start election, term=2
+2023/01/03 03:41:36 [#0 func2] appendEntriesHandler server=3, reply={Term:0 Success:false}
+2023/01/03 03:41:36 [#3 electionTimerLoop] Election timeout, role=follower, votedFor=-1
+2023/01/03 03:41:36 [#3 becomeCandidate] Become candidate
+2023/01/03 03:41:36 [#3 startElection] Start election, term=2
+2023/01/03 03:41:36 [#4 electionTimerLoop] Election timeout, role=follower, votedFor=-1
+2023/01/03 03:41:36 [#4 becomeCandidate] Become candidate
+2023/01/03 03:41:36 [#4 startElection] Start election, term=2
+2023/01/03 03:41:36 [#0 func1] RPC AppendEntries successed from server#1, args={Term:1 LeaderId:0 PrevLogIndex:10 PrevLogTerm:1 Entries:[] LeaderCommit:10}, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func2] appendEntriesHandler server=1, reply={Term:1 Success:true}
+2023/01/03 03:41:36 [#0 func2] appendEntriesHandler server=3, reply={Term:0 Success:false}
+2023/01/03 03:41:36 =======================================
+2023/01/03 03:41:36 [Status#0] role=leader, currentTerm=1, votedFor=0, commitIndex=10, lastApplied=10
+2023/01/03 03:41:36 [Status#0]     log=[{1235 1} {1236 1} {1237 1} {1238 1} {1239 1} {1240 1} {1241 1} {1242 1} {1243 1} {1244 1} {1245 1}]
+2023/01/03 03:41:36 [Status#0]     nextIndex=[11 11 1 11 11], matchIndex=[10 10 0 10 10]
+2023/01/03 03:41:36 [Status#1] role=follower, currentTerm=1, votedFor=-1, commitIndex=10, lastApplied=10
+2023/01/03 03:41:36 [Status#1]     log=[{1235 1} {1236 1} {1237 1} {1238 1} {1239 1} {1240 1} {1241 1} {1242 1} {1243 1} {1244 1} {1245 1}]
+2023/01/03 03:41:36 [Status#2] role=candidate, currentTerm=2, votedFor=2, commitIndex=0, lastApplied=0
+2023/01/03 03:41:36 [Status#2]     log=[{1235 1}]
+2023/01/03 03:41:36 [Status#3] role=candidate, currentTerm=2, votedFor=3, commitIndex=0, lastApplied=0
+2023/01/03 03:41:36 [Status#3]     log=[{1235 1}]
+2023/01/03 03:41:36 [Status#4] role=candidate, currentTerm=2, votedFor=4, commitIndex=0, lastApplied=0
+2023/01/03 03:41:36 [Status#4]     log=[{1235 1}]
+2023/01/03 03:41:36 =======================================
+disconnect(0)
+disconnect(1)
+connect(2)
+connect(3)
+connect(4)
+2023/01/03 03:41:36 =======================================
+2023/01/03 03:41:36 [Status#0] role=leader, currentTerm=1, votedFor=0, commitIndex=10, lastApplied=10
+2023/01/03 03:41:36 [Status#0]     log=[{1235 1} {1236 1} {1237 1} {1238 1} {1239 1} {1240 1} {1241 1} {1242 1} {1243 1} {1244 1} {1245 1}]
+2023/01/03 03:41:36 [Status#0]     nextIndex=[11 11 1 11 11], matchIndex=[10 10 0 10 10]
+2023/01/03 03:41:36 [Status#1] role=follower, currentTerm=1, votedFor=-1, commitIndex=10, lastApplied=10
+2023/01/03 03:41:36 [Status#1]     log=[{1235 1} {1236 1} {1237 1} {1238 1} {1239 1} {1240 1} {1241 1} {1242 1} {1243 1} {1244 1} {1245 1}]
+2023/01/03 03:41:36 [Status#2] role=candidate, currentTerm=2, votedFor=2, commitIndex=0, lastApplied=0
+2023/01/03 03:41:36 [Status#2]     log=[{1235 1}]
+2023/01/03 03:41:36 [Status#3] role=candidate, currentTerm=2, votedFor=3, commitIndex=0, lastApplied=0
+2023/01/03 03:41:36 [Status#3]     log=[{1235 1}]
+2023/01/03 03:41:36 [Status#4] role=candidate, currentTerm=2, votedFor=4, commitIndex=0, lastApplied=0
+2023/01/03 03:41:36 [Status#4]     log=[{1235 1}]
+2023/01/03 03:41:36 =======================================
+2023/01/03 03:41:37 [#2 electionTimerLoop] Election timeout, role=candidate, votedFor=2
+2023/01/03 03:41:37 [#2 startElection] Start election, term=3
+2023/01/03 03:41:37 [#4 becomeFollower] Become follower
+2023/01/03 03:41:37 [#4 setTerm] currentTerm set to 3
+2023/01/03 03:41:37 [#3 becomeFollower] Become follower
+2023/01/03 03:41:37 [#3 setTerm] currentTerm set to 3
+2023/01/03 03:41:37 [#2 func1] RPC RequestVote successed from server#4, args={Term:3 CandidateId:2 LastLogIndex:0 LastLogTerm:1}, reply={Term:3 VoteGranted:true}
+2023/01/03 03:41:37 [#2 func1] RPC RequestVote successed from server#3, args={Term:3 CandidateId:2 LastLogIndex:0 LastLogTerm:1}, reply={Term:3 VoteGranted:true}
+2023/01/03 03:41:37 [#2 func2] Vote received from server#4, voteGranted=2
+2023/01/03 03:41:37 [#2 func2] Vote received from server#3, voteGranted=3
+2023/01/03 03:41:37 [#2 becomeLeader] Become leader
+2023/01/03 03:41:37 [#2 func1] RPC AppendEntries successed from server#4, args={Term:3 LeaderId:2 PrevLogIndex:0 PrevLogTerm:1 Entries:[] LeaderCommit:0}, reply={Term:3 Success:true}
+2023/01/03 03:41:37 [#2 func2] appendEntriesHandler server=4, reply={Term:3 Success:true}
+2023/01/03 03:41:37 [#2 setMatchIndex] setMatchIndex: server=4, newMatchIndex=0
+2023/01/03 03:41:37 [#2 func1] RPC AppendEntries successed from server#3, args={Term:3 LeaderId:2 PrevLogIndex:0 PrevLogTerm:1 Entries:[] LeaderCommit:0}, reply={Term:3 Success:true}
+2023/01/03 03:41:37 [#2 func2] appendEntriesHandler server=3, reply={Term:3 Success:true}
+2023/01/03 03:41:37 [#2 setMatchIndex] setMatchIndex: server=3, newMatchIndex=0
+2023/01/03 03:41:37 [#2 Start] Received command: 1246
+2023/01/03 03:41:37 [#2 func1] RPC AppendEntries successed from server#4, args={Term:3 LeaderId:2 PrevLogIndex:0 PrevLogTerm:1 Entries:[{Command:1246 Term:3}] LeaderCommit:0}, reply={Term:3 Success:true}
+2023/01/03 03:41:37 [#2 func2] appendEntriesHandler server=4, reply={Term:3 Success:true}
+2023/01/03 03:41:37 [#2 setMatchIndex] setMatchIndex: server=4, newMatchIndex=1
+2023/01/03 03:41:37 [#2 func1] RPC AppendEntries successed from server#3, args={Term:3 LeaderId:2 PrevLogIndex:0 PrevLogTerm:1 Entries:[{Command:1246 Term:3}] LeaderCommit:0}, reply={Term:3 Success:true}
+2023/01/03 03:41:37 [#2 func2] appendEntriesHandler server=3, reply={Term:3 Success:true}
+2023/01/03 03:41:37 [#2 setMatchIndex] setMatchIndex: server=3, newMatchIndex=1
+2023/01/03 03:41:37 [#2 setCommitIndex] setCommitIndex: newCommitIndex=1
+2023/01/03 03:41:37 [#2 setCommitIndex] log #1 committed: 1246
+2023/01/03 03:41:37 Committed log received, server=2, index=2
+2023/01/03 03:41:37 apply error: commit index=2 server=2 1246 != server=1 1236
+exit status 1
+FAIL	dissys/src/raft	1.563s

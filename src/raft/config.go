@@ -105,6 +105,14 @@ func (cfg *config) crash1(i int) {
 	}
 }
 
+func (cfg *config) PrintRaftStatus() {
+	log.Printf("=======================================")
+	for _, rf := range cfg.rafts {
+		rf.PrintStatus()
+	}
+	log.Printf("=======================================")
+}
+
 // start or re-start a Raft.
 // if one already exists, "kill" it first.
 // allocate new outgoing port file names, and a new
@@ -201,7 +209,7 @@ func (cfg *config) cleanup() {
 
 // attach server i to the net.
 func (cfg *config) connect(i int) {
-	// fmt.Printf("connect(%d)\n", i)
+	fmt.Printf("connect(%d)\n", i)
 
 	cfg.connected[i] = true
 
@@ -224,7 +232,7 @@ func (cfg *config) connect(i int) {
 
 // detach server i from the net.
 func (cfg *config) disconnect(i int) {
-	// fmt.Printf("disconnect(%d)\n", i)
+	fmt.Printf("disconnect(%d)\n", i)
 
 	cfg.connected[i] = false
 
