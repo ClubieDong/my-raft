@@ -159,6 +159,7 @@ func (cfg *config) start1(i int) {
 				}
 				_, prevok := cfg.logs[i][m.Index-1]
 				cfg.logs[i][m.Index] = v
+				DPrintf("Committed log received, server=%d, index=%d", i, m.Index)
 				cfg.mu.Unlock()
 
 				if m.Index > 1 && prevok == false {
@@ -281,6 +282,7 @@ func (cfg *config) checkOneLeader() int {
 		}
 
 		if len(leaders) != 0 {
+			DPrintf("checkOneLeader passed, leaderId=%d", leaders[lastTermWithLeader][0])
 			return leaders[lastTermWithLeader][0]
 		}
 	}
@@ -413,6 +415,7 @@ func (cfg *config) one(cmd int, expectedServers int) int {
 					// committed
 					if cmd2, ok := cmd1.(int); ok && cmd2 == cmd {
 						// and it was the command we submitted.
+						DPrintf("one Success, cmd=%d", cmd)
 						return index
 					}
 				}

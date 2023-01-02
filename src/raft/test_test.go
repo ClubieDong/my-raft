@@ -8,12 +8,14 @@ package raft
 // test with the original before submitting.
 //
 
-import "testing"
-import "fmt"
-import "time"
-import "math/rand"
-import "sync/atomic"
-import "sync"
+import (
+	"fmt"
+	"math/rand"
+	"sync"
+	"sync/atomic"
+	"testing"
+	"time"
+)
 
 // The tester generously allows solutions to complete elections in one second
 // (much more than the paper's range of timeouts).
@@ -50,26 +52,31 @@ func TestReElection(t *testing.T) {
 	leader1 := cfg.checkOneLeader()
 
 	// if the leader disconnects, a new one should be elected.
+	DPrintf("The leader disconnects")
 	cfg.disconnect(leader1)
 	cfg.checkOneLeader()
 
 	// if the old leader rejoins, that shouldn't
 	// disturb the old leader.
+	DPrintf("The old leader rejoins")
 	cfg.connect(leader1)
 	leader2 := cfg.checkOneLeader()
 
 	// if there's no quorum, no leader should
 	// be elected.
+	DPrintf("There's no quorum")
 	cfg.disconnect(leader2)
 	cfg.disconnect((leader2 + 1) % servers)
 	time.Sleep(2 * RaftElectionTimeout)
 	cfg.checkNoLeader()
 
 	// if a quorum arises, it should elect a leader.
+	DPrintf("A quorum arises")
 	cfg.connect((leader2 + 1) % servers)
 	cfg.checkOneLeader()
 
 	// re-join of last node shouldn't prevent leader from existing.
+	DPrintf("re-join of last node")
 	cfg.connect(leader2)
 	cfg.checkOneLeader()
 
@@ -307,9 +314,11 @@ func TestRejoin(t *testing.T) {
 	// new leader network failure
 	leader2 := cfg.checkOneLeader()
 	cfg.disconnect(leader2)
+	DPrintf("leader2(%d) disconnected", leader2)
 
 	// old leader connected again
 	cfg.connect(leader1)
+	DPrintf("leader1(%d) connected", leader1)
 
 	cfg.one(104, 2)
 
@@ -625,7 +634,6 @@ func TestPersist3(t *testing.T) {
 	fmt.Printf("  ... Passed\n")
 }
 
-//
 // Test the scenarios described in Figure 8 of the extended Raft paper. Each
 // iteration asks a leader, if there is one, to insert a command in the Raft
 // log.  If there is a leader, that leader will fail quickly with a high
@@ -634,7 +642,6 @@ func TestPersist3(t *testing.T) {
 // alive servers isn't enough to form a majority, perhaps start a new server.
 // The leader in a new term may try to finish replicating log entries that
 // haven't been committed yet.
-//
 func TestFigure8(t *testing.T) {
 	servers := 5
 	cfg := make_config(t, servers, false)
