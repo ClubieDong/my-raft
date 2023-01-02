@@ -22,6 +22,7 @@ import (
 	"dissys/src/labrpc"
 	"encoding/gob"
 	"log"
+	"math/rand"
 	"runtime"
 	"strings"
 	"sync"
@@ -44,8 +45,8 @@ func minInt(a int, b int) int {
 
 func parallelRpc[TArgs any, TReply any](
 	rf *Raft, rpcName string,
-	getArgs func(server int) TArgs,
-	replyHandler func(server int, ok bool, args TArgs, reply TReply) bool, // Return whether to retry
+	getArgs func(server int) (args TArgs, giveUp bool),
+	replyHandler func(server int, args TArgs, reply TReply) bool, // Return whether to retry
 ) {
 	for server := 0; server < len(rf.peers); server += 1 {
 		if server == rf.me {
@@ -53,28 +54,34 @@ func parallelRpc[TArgs any, TReply any](
 		}
 		go func(server int) {
 			for {
-				var args TArgs
-				var reply TReply
-
 				rf.mu.Lock()
-				args = getArgs(server)
+				args, giveUp := getArgs(server)
 				rf.mu.Unlock()
-
-				// rf.logInfo("RPC %s issued to server#%d, args=%+v", rpcName, server, args)
-				ok := rf.peers[server].Call("Raft."+rpcName, args, &reply)
-				// rf.logInfo("RPC %s done from server#%d, args=%+v, ok=%t, reply=%+v", rpcName, reply.server, args, reply.ok, reply.reply)
-				if ok {
-					rf.logInfo("RPC %s successed from server#%d, args=%+v, reply=%+v", rpcName, server, args, reply)
-				}
-
-				rf.mu.Lock()
-				retry := replyHandler(server, ok, args, reply)
-				rf.mu.Unlock()
-
-				if !retry {
+				if giveUp {
 					break
 				}
-				time.Sleep(RPC_RETRY_MS * time.Millisecond)
+
+				var reply TReply
+				rf.logInfo("RPC %s issued to server#%d, args=%v", rpcName, server, args)
+				ok := rf.peers[server].Call("Raft."+rpcName, args, &reply)
+				// rf.logInfo("RPC %s done from server#%d, args=%v, ok=%t, reply=%v", rpcName, reply.server, args, reply.ok, reply.reply)
+				if ok {
+					rf.logInfo("RPC %s successed from server#%d, args=%v, reply=%v", rpcName, server, args, reply)
+				}
+				if !ok {
+					time.Sleep(RPC_RETRY_MS * time.Millisecond)
+					continue
+				}
+
+				rf.mu.Lock()
+				retry := replyHandler(server, args, reply)
+				rf.mu.Unlock()
+
+				if retry {
+					time.Sleep(RPC_RETRY_MS * time.Millisecond)
+					continue
+				}
+				break
 			}
 		}(server)
 	}
@@ -276,18 +283,18 @@ func (rf *Raft) startElection() {
 	rf.votedFor = rf.me
 
 	voteGranted := 1 // voted for self
-	parallelRpc(rf, "RequestVote", func(server int) RequestVoteArgs {
+	parallelRpc(rf, "RequestVote", func(server int) (args RequestVoteArgs, giveUp bool) {
+		if rf.role != "candidate" {
+			return RequestVoteArgs{}, true
+		}
 		lastLogIndex, lastLogTerm := rf.getLastLogIndexAndTerm()
 		return RequestVoteArgs{
 			Term:         rf.currentTerm,
 			CandidateId:  rf.me,
 			LastLogIndex: lastLogIndex,
 			LastLogTerm:  lastLogTerm,
-		}
-	}, func(server int, ok bool, args RequestVoteArgs, reply RequestVoteReply) bool {
-		if !ok {
-			return rf.role == "candidate"
-		}
+		}, false
+	}, func(server int, args RequestVoteArgs, reply RequestVoteReply) bool {
 		rf.setTerm(reply.Term)
 		// Not voted for this term
 		if rf.role != "candidate" || args.Term != rf.currentTerm {
@@ -353,7 +360,10 @@ func (rf *Raft) AppendEntries(args AppendEntriesArgs, reply *AppendEntriesReply)
 
 func (rf *Raft) sendAppendEntriesToEachServer() {
 	rf.resetHeartbeatTicker()
-	parallelRpc(rf, "AppendEntries", func(server int) AppendEntriesArgs {
+	parallelRpc(rf, "AppendEntries", func(server int) (args AppendEntriesArgs, giveUp bool) {
+		if rf.role != "leader" {
+			return AppendEntriesArgs{}, true
+		}
 		return AppendEntriesArgs{
 			Term:         rf.currentTerm,
 			LeaderId:     rf.me,
@@ -361,21 +371,22 @@ func (rf *Raft) sendAppendEntriesToEachServer() {
 			PrevLogTerm:  rf.getTermByIndex(rf.nextIndex[server] - 1),
 			Entries:      rf.log[rf.nextIndex[server]:],
 			LeaderCommit: rf.commitIndex,
-		}
-	}, func(server int, ok bool, args AppendEntriesArgs, reply AppendEntriesReply) bool {
-		rf.logInfo("appendEntriesHandler server=%d, reply=%+v", server, reply)
-		if !ok {
-			return rf.role == "leader"
-		}
+		}, false
+	}, func(server int, args AppendEntriesArgs, reply AppendEntriesReply) bool {
+		rf.logInfo("appendEntriesHandler server=%d, args=%v, reply=%v", server, args, reply)
 		rf.setTerm(reply.Term)
 		if rf.role != "leader" || args.Term != rf.currentTerm {
 			return false
 		}
 		if !reply.Success {
 			if rf.nextIndex[server] > 0 {
+				rf.logInfo("nextIndex of server#%d changed from %d to %d", server, rf.nextIndex[server], rf.nextIndex[server]-1)
 				rf.nextIndex[server] -= 1
 			}
 			return true
+		}
+		if rf.nextIndex[server] != args.PrevLogIndex+len(args.Entries)+1 {
+			rf.logInfo("nextIndex of server#%d changed from %d to %d", server, rf.nextIndex[server], args.PrevLogIndex+len(args.Entries)+1)
 		}
 		rf.nextIndex[server] = args.PrevLogIndex + len(args.Entries) + 1
 		rf.setMatchIndex(server, rf.nextIndex[server]-1)
@@ -413,6 +424,7 @@ func (rf *Raft) becomeLeader() {
 	for server := 0; server < len(rf.peers); server += 1 {
 		rf.nextIndex[server] = len(rf.log)
 		rf.matchIndex[server] = -1
+		rf.logInfo("nextIndex of server#%d initialized to %d", server, rf.nextIndex[server])
 	}
 	rf.matchIndex[rf.me] = len(rf.log) - 1
 
@@ -420,9 +432,7 @@ func (rf *Raft) becomeLeader() {
 }
 
 func (rf *Raft) resetElectionTicker() {
-	// DEBUG
-	// timeoutMs := MIN_ELECTION_TIMEOUT_MS + rand.Int()%(MAX_ELECTION_TIMEOUT_MS-MIN_ELECTION_TIMEOUT_MS)
-	timeoutMs := MIN_ELECTION_TIMEOUT_MS + rf.me*10
+	timeoutMs := MIN_ELECTION_TIMEOUT_MS + rand.Int()%(MAX_ELECTION_TIMEOUT_MS-MIN_ELECTION_TIMEOUT_MS)
 	timeout := time.Duration(timeoutMs) * time.Millisecond
 	if rf.electionTicker == nil {
 		rf.electionTicker = time.NewTicker(timeout)
@@ -508,6 +518,7 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 		Term:    rf.currentTerm,
 		Command: command,
 	})
+	rf.logInfo("nextIndex of server#%d changed from %d to %d", rf.me, rf.nextIndex[rf.me], rf.nextIndex[rf.me]+1)
 	rf.nextIndex[rf.me] += 1
 	rf.matchIndex[rf.me] += 1
 
