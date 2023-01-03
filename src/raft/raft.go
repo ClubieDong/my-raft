@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"dissys/src/labrpc"
 	"encoding/gob"
+	"fmt"
 	"log"
 	"math/rand"
 	"runtime"
@@ -30,12 +31,12 @@ import (
 )
 
 const (
-	SHOW_LOG_INFO = true
+	SHOW_LOG_INFO = false
 
 	MIN_ELECTION_TIMEOUT_MS = 300
 	MAX_ELECTION_TIMEOUT_MS = 400
 	HEARTBEAT_INTERVAL_MS   = 100
-	RPC_RETRY_MS            = 50
+	RPC_RETRY_MS            = 10
 )
 
 func minInt(a int, b int) int {
@@ -47,7 +48,8 @@ func minInt(a int, b int) int {
 
 func parallelRpc[TArgs any, TReply any](
 	rf *Raft, rpcName string,
-	getArgs func(server int) (args TArgs, giveUp bool),
+	precondition func(server int) bool,
+	getArgs func(server int) TArgs,
 	replyHandler func(server int, args TArgs, reply TReply) bool, // Return whether to retry
 ) {
 	for server := 0; server < len(rf.peers); server += 1 {
@@ -55,11 +57,26 @@ func parallelRpc[TArgs any, TReply any](
 			continue
 		}
 		go func(server int) {
-			for {
-				rf.mu.Lock()
-				args, giveUp := getArgs(server)
+			rf.mu.Lock()
+			if !precondition(server) {
 				rf.mu.Unlock()
-				if giveUp {
+				return
+			}
+			args := getArgs(server)
+			rf.mu.Unlock()
+
+			firstTry := true
+			for {
+				if firstTry {
+					firstTry = false
+				} else {
+					time.Sleep(RPC_RETRY_MS * time.Millisecond)
+				}
+
+				rf.mu.Lock()
+				continueRetry := precondition(server)
+				rf.mu.Unlock()
+				if !continueRetry {
 					break
 				}
 
@@ -70,18 +87,18 @@ func parallelRpc[TArgs any, TReply any](
 					rf.logInfo("RPC %s successed from server#%d, args=%v, reply=%v", rpcName, server, args, reply)
 				}
 				if !ok {
-					time.Sleep(RPC_RETRY_MS * time.Millisecond)
 					continue
 				}
 
 				rf.mu.Lock()
 				retry := replyHandler(server, args, reply)
-				rf.mu.Unlock()
-
-				if retry {
-					time.Sleep(RPC_RETRY_MS * time.Millisecond)
+				if retry && precondition(server) {
+					args = getArgs(server)
+					rf.mu.Unlock()
 					continue
 				}
+				rf.mu.Unlock()
+
 				break
 			}
 		}(server)
@@ -144,9 +161,20 @@ func (rf *Raft) logInfo(format string, args ...interface{}) {
 	}
 }
 
+func (rf *Raft) FormatLog() string {
+	var sb strings.Builder
+	for idx, log := range rf.log {
+		sb.WriteString(fmt.Sprintf("(%d,%d,%v) ", idx, log.Term, log.Command))
+	}
+	return sb.String()
+}
+
 func (rf *Raft) PrintStatus() {
+	if !SHOW_LOG_INFO {
+		return
+	}
 	log.Printf("[Status#%d] role=%s, currentTerm=%d, votedFor=%d, commitIndex=%d, lastApplied=%d", rf.me, rf.role, rf.currentTerm, rf.votedFor, rf.commitIndex, rf.lastApplied)
-	log.Printf("[Status#%d]     log=%v", rf.me, rf.log)
+	log.Printf("[Status#%d]     log=%s", rf.me, rf.FormatLog())
 	if rf.role == "leader" {
 		log.Printf("[Status#%d]     nextIndex=%v, matchIndex=%v", rf.me, rf.nextIndex, rf.matchIndex)
 	}
@@ -289,17 +317,16 @@ func (rf *Raft) startElection() {
 	rf.votedFor = rf.me
 
 	voteGranted := 1 // voted for self
-	parallelRpc(rf, "RequestVote", func(server int) (args RequestVoteArgs, giveUp bool) {
-		if rf.role != "candidate" {
-			return RequestVoteArgs{}, true
-		}
+	parallelRpc(rf, "RequestVote", func(server int) bool {
+		return rf.role == "candidate"
+	}, func(server int) RequestVoteArgs {
 		lastLogIndex, lastLogTerm := rf.getLastLogIndexAndTerm()
 		return RequestVoteArgs{
 			Term:         rf.currentTerm,
 			CandidateId:  rf.me,
 			LastLogIndex: lastLogIndex,
 			LastLogTerm:  lastLogTerm,
-		}, false
+		}
 	}, func(server int, args RequestVoteArgs, reply RequestVoteReply) bool {
 		rf.setTerm(reply.Term)
 		// Not voted for this term
@@ -330,8 +357,9 @@ type AppendEntriesArgs struct {
 }
 
 type AppendEntriesReply struct {
-	Term    int
-	Success bool
+	Term          int
+	Success       bool
+	NextIndexHint int
 }
 
 func (rf *Raft) AppendEntries(args AppendEntriesArgs, reply *AppendEntriesReply) {
@@ -347,20 +375,38 @@ func (rf *Raft) AppendEntries(args AppendEntriesArgs, reply *AppendEntriesReply)
 	if args.Term < rf.currentTerm {
 		rf.logInfo("AppendEntries rejected to server#%d due to outdated term, args.Term=%d, currentTerm=%d", args.LeaderId, args.Term, rf.currentTerm)
 		reply.Success = false
+		reply.NextIndexHint = -1
 		return
 	}
 	rf.resetElectionTicker()
-	if args.PrevLogIndex >= len(rf.log) || rf.getTermByIndex(args.PrevLogIndex) != args.PrevLogTerm {
-		rf.logInfo("AppendEntries rejected to server#%d due to mismatched prevLogIndex, prevLogIndex=%d", args.LeaderId, args.PrevLogIndex)
+	if args.PrevLogIndex >= len(rf.log) {
 		reply.Success = false
+		reply.NextIndexHint = len(rf.log)
+		rf.logInfo("AppendEntries rejected to server#%d due to missing logs, prevLogIndex=%d, len(rf.log)=%d, nextIndexHint=%d", args.LeaderId, args.PrevLogIndex, len(rf.log), reply.NextIndexHint)
 		return
 	}
-	reply.Success = true
-	if len(args.Entries) > 0 {
-		rf.log = rf.log[:args.PrevLogIndex+1]
-		rf.log = append(rf.log, args.Entries...)
-		rf.logInfo("AppendEntries applied, log=%v", rf.log)
+	if myPrevLogTerm := rf.getTermByIndex(args.PrevLogIndex); myPrevLogTerm != args.PrevLogTerm {
+		reply.Success = false
+		reply.NextIndexHint = args.PrevLogIndex
+		for reply.NextIndexHint > 0 && rf.getTermByIndex(reply.NextIndexHint-1) == myPrevLogTerm {
+			reply.NextIndexHint -= 1
+		}
+		rf.logInfo("AppendEntries rejected to server#%d due to mismatched prevLogTerm, prevLogIndex=%d, prevLogTerm=%d, myPrevLogTerm=%d, nextIndexHint=%d", args.LeaderId, args.PrevLogIndex, args.PrevLogTerm, myPrevLogTerm, reply.NextIndexHint)
+		return
 	}
+
+	newEntryIndex := 0
+	for myLogIndex := args.PrevLogIndex + 1; myLogIndex < len(rf.log) && newEntryIndex < len(args.Entries); myLogIndex += 1 {
+		if rf.getTermByIndex(myLogIndex) != args.Entries[newEntryIndex].Term {
+			rf.log = rf.log[:myLogIndex]
+			break
+		}
+		newEntryIndex += 1
+	}
+	rf.log = append(rf.log, args.Entries[newEntryIndex:]...)
+	rf.logInfo("AppendEntries applied, log=%s", rf.FormatLog())
+	reply.Success = true
+	reply.NextIndexHint = len(rf.log)
 	if args.LeaderCommit > rf.commitIndex {
 		rf.setCommitIndex(minInt(args.LeaderCommit, args.PrevLogIndex+1))
 	}
@@ -368,10 +414,9 @@ func (rf *Raft) AppendEntries(args AppendEntriesArgs, reply *AppendEntriesReply)
 
 func (rf *Raft) sendAppendEntriesToEachServer() {
 	rf.resetHeartbeatTicker()
-	parallelRpc(rf, "AppendEntries", func(server int) (args AppendEntriesArgs, giveUp bool) {
-		if rf.role != "leader" {
-			return AppendEntriesArgs{}, true
-		}
+	parallelRpc(rf, "AppendEntries", func(server int) bool {
+		return rf.role == "leader"
+	}, func(server int) AppendEntriesArgs {
 		return AppendEntriesArgs{
 			Term:         rf.currentTerm,
 			LeaderId:     rf.me,
@@ -379,21 +424,21 @@ func (rf *Raft) sendAppendEntriesToEachServer() {
 			PrevLogTerm:  rf.getTermByIndex(rf.nextIndex[server] - 1),
 			Entries:      rf.log[rf.nextIndex[server]:],
 			LeaderCommit: rf.commitIndex,
-		}, false
+		}
 	}, func(server int, args AppendEntriesArgs, reply AppendEntriesReply) bool {
 		rf.setTerm(reply.Term)
 		if rf.role != "leader" || args.Term != rf.currentTerm {
 			return false
 		}
+		if reply.NextIndexHint != -1 {
+			rf.nextIndex[server] = minInt(reply.NextIndexHint, len(rf.log))
+			rf.logInfo("Set nextIndex of server#%d to %d", server, rf.nextIndex[server])
+		}
 		if !reply.Success {
-			if rf.nextIndex[server] > 0 {
-				rf.nextIndex[server] -= 1
-			}
-			rf.logInfo("AppendEntries rejected by server#%d, decrement nextIndex to %d", server, rf.nextIndex[server])
+			rf.logInfo("AppendEntries rejected by server#%d", server)
 			return true
 		}
-		rf.logInfo("AppendEntries applied by server#%d, set nextIndex to %d", server, args.PrevLogIndex+len(args.Entries)+1)
-		rf.nextIndex[server] = args.PrevLogIndex + len(args.Entries) + 1
+		rf.logInfo("AppendEntries applied by server#%d", server)
 		rf.setMatchIndex(server, rf.nextIndex[server]-1)
 		return false
 	})
