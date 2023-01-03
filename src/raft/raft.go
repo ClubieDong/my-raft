@@ -30,7 +30,7 @@ import (
 )
 
 const (
-	SHOW_LOG_INFO = false
+	SHOW_LOG_INFO = true
 
 	MIN_ELECTION_TIMEOUT_MS = 300
 	MAX_ELECTION_TIMEOUT_MS = 400
@@ -278,6 +278,7 @@ func (rf *Raft) RequestVote(args RequestVoteArgs, reply *RequestVoteReply) {
 		rf.logInfo("Vote granted to server#%d", args.CandidateId)
 		reply.VoteGranted = true
 		rf.votedFor = args.CandidateId
+		rf.resetElectionTicker()
 		return
 	}
 }
@@ -349,7 +350,6 @@ func (rf *Raft) AppendEntries(args AppendEntriesArgs, reply *AppendEntriesReply)
 		return
 	}
 	rf.resetElectionTicker()
-	rf.votedFor = -1
 	if args.PrevLogIndex >= len(rf.log) || rf.getTermByIndex(args.PrevLogIndex) != args.PrevLogTerm {
 		rf.logInfo("AppendEntries rejected to server#%d due to mismatched prevLogIndex, prevLogIndex=%d", args.LeaderId, args.PrevLogIndex)
 		reply.Success = false
@@ -405,6 +405,7 @@ func (rf *Raft) becomeFollower() {
 	}
 	rf.logInfo("Become follower")
 	rf.role = "follower"
+	rf.votedFor = -1
 }
 
 func (rf *Raft) becomeCandidate() {
@@ -467,7 +468,8 @@ func (rf *Raft) electionTickerLoop() {
 		}
 		rf.logInfo("Election timeout")
 
-		if rf.role == "follower" && rf.votedFor == -1 {
+		rf.votedFor = -1
+		if rf.role == "follower" {
 			rf.becomeCandidate()
 		} else if rf.role == "candidate" {
 			rf.startElection()
@@ -547,6 +549,7 @@ func (rf *Raft) Kill() {
 	defer rf.mu.Unlock()
 	defer rf.persist()
 
+	rf.logInfo("Killed")
 	rf.role = "killed"
 }
 
